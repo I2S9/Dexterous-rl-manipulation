@@ -1,0 +1,77 @@
+# Cursor IDE configuration
+.cursorrules
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyTorch
+*.pth
+*.pt
+*.ckpt
+checkpoints/
+models/
+
+# Logs and experiment outputs
+logs/
+runs/
+wandb/
+tensorboard/
+*.log
+
+# Data and datasets
+data/
+datasets/
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
