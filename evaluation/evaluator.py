@@ -11,6 +11,7 @@ from envs import DexterousManipulationEnv
 from experiments.config import CurriculumConfig
 from evaluation.heldout_objects import HeldOutObjectSet
 from evaluation.metrics import EvaluationMetrics, format_metrics_report
+from evaluation.failure_logger import FailureLogger, EpisodeRecorder
 
 
 class Evaluator:
@@ -26,6 +27,7 @@ class Evaluator:
         heldout_set: HeldOutObjectSet,
         reward_type: str = "dense",
         max_episode_steps: int = 200,
+        failure_logger: Optional[FailureLogger] = None,
     ):
         """
         Initialize evaluator.
@@ -35,11 +37,13 @@ class Evaluator:
             heldout_set: Held-out object set
             reward_type: Type of reward to use
             max_episode_steps: Maximum steps per episode
+            failure_logger: Optional failure logger for recording failures
         """
         self.policy = policy
         self.heldout_set = heldout_set
         self.reward_type = reward_type
         self.max_episode_steps = max_episode_steps
+        self.failure_logger = failure_logger
         
         # Track if policy has been frozen
         self._policy_frozen = False
@@ -90,6 +94,21 @@ class Evaluator:
             max_episode_steps=self.max_episode_steps
         )
         
+        # Initialize recorder if failure logger is provided
+        recorder = None
+        if self.failure_logger:
+            recorder = EpisodeRecorder(record_states=True, record_actions=True)
+            # Convert config to dict for JSON serialization
+            config_dict = eval_config.to_dict() if hasattr(eval_config, 'to_dict') else {
+                "object_size": eval_config.object_size,
+                "object_mass": eval_config.object_mass,
+                "friction_coefficient": eval_config.friction_coefficient,
+            }
+            recorder.set_metadata(
+                seed=seed,
+                eval_config=config_dict,
+            )
+        
         # Run episode
         obs, info = env.reset(seed=seed)
         if hasattr(self.policy, 'reset'):
@@ -100,8 +119,26 @@ class Evaluator:
         success = False
         contact_history = []  # Track contact history for failure analysis
         
+        # Record initial state
+        if recorder:
+            num_contacts = info.get("num_contacts", 0)
+            contacts = [1.0 if i < num_contacts else 0.0 for i in range(5)]
+            recorder.record_step(state=obs, contacts=contacts)
+            # Store metadata for reproducibility
+            recorder.set_metadata(
+                seed=seed,
+                object_size=float(info["curriculum"]["object_size"]),
+                object_mass=float(info["curriculum"]["object_mass"]),
+                friction_coefficient=float(info["curriculum"]["friction_coefficient"]),
+            )
+        
         for step in range(self.max_episode_steps):
             action = self.policy.select_action(obs)
+            
+            # Record action before step (action that led to next state)
+            if recorder:
+                recorder.record_step(action=action)
+            
             obs, reward, terminated, truncated, info = env.step(action)
             
             episode_reward += reward
@@ -109,7 +146,12 @@ class Evaluator:
             
             # Track contacts for failure analysis
             num_contacts = info.get("num_contacts", 0)
-            contact_history.append([1.0 if i < num_contacts else 0.0 for i in range(5)])  # 5 fingers
+            contacts = [1.0 if i < num_contacts else 0.0 for i in range(5)]
+            contact_history.append(contacts)
+            
+            # Record state and contacts after step
+            if recorder:
+                recorder.record_step(state=obs, contacts=contacts)
             
             if terminated or truncated:
                 success = terminated
@@ -118,9 +160,7 @@ class Evaluator:
         final_info = info
         final_contacts = final_info.get("num_contacts", 0)
         
-        env.close()
-        
-        return {
+        episode_result = {
             "episode_reward": float(episode_reward),
             "episode_steps": int(episode_steps),
             "success": bool(success),
@@ -131,6 +171,22 @@ class Evaluator:
             "object_mass": float(final_info["curriculum"]["object_mass"]),
             "friction_coefficient": float(final_info["curriculum"]["friction_coefficient"]),
         }
+        
+        # Log failure episode if logger is provided and episode failed
+        if self.failure_logger and not success and recorder:
+            recorded_data = recorder.get_recorded_data()
+            self.failure_logger.log_episode(
+                episode_data=episode_result,
+                states=recorded_data["states"],
+                actions=recorded_data["actions"],
+                contacts=recorded_data["contacts"],
+                metadata=recorded_data["metadata"],
+                max_steps=self.max_episode_steps
+            )
+        
+        env.close()
+        
+        return episode_result
     
     def evaluate_heldout_set(
         self,

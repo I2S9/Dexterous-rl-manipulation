@@ -21,6 +21,7 @@ from evaluation.failure_analysis import (
     print_failure_statistics,
     analyze_failure_modes,
 )
+from evaluation.failure_logger import FailureLogger, EpisodeRecorder
 
 __all__ = [
     "HeldOutObjectSet", 
@@ -40,4 +41,6 @@ __all__ = [
     "print_failure_taxonomy",
     "print_failure_statistics",
     "analyze_failure_modes",
+    "FailureLogger",
+    "EpisodeRecorder",
 ]
