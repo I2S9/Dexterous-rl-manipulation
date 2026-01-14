@@ -22,6 +22,14 @@ from evaluation.failure_analysis import (
     analyze_failure_modes,
 )
 from evaluation.failure_logger import FailureLogger, EpisodeRecorder
+from evaluation.failure_statistics import (
+    load_failure_logs,
+    compute_failure_distribution,
+    compute_correlations,
+    plot_failure_distribution,
+    plot_failure_correlations,
+    generate_failure_report,
+)
 
 __all__ = [
     "HeldOutObjectSet", 
@@ -43,4 +51,10 @@ __all__ = [
     "analyze_failure_modes",
     "FailureLogger",
     "EpisodeRecorder",
+    "load_failure_logs",
+    "compute_failure_distribution",
+    "compute_correlations",
+    "plot_failure_distribution",
+    "plot_failure_correlations",
+    "generate_failure_report",
 ]
