@@ -5,6 +5,10 @@ This script runs a few episodes with random and heuristic policies
 to ensure the environment is functioning correctly.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import numpy as np
 from envs import DexterousManipulationEnv
 from policies import RandomPolicy, HeuristicPolicy

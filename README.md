@@ -377,18 +377,23 @@ dexterous-rl-manipulation/
 ├── training/                # Training utilities
 │   ├── episode_utils.py     # Episode execution utilities
 │   ├── reward_comparison.py # Reward comparison studies
-│   └── logger.py            # Training logging
+│   └── logger.py           # Training logging
 ├── evaluation/              # Evaluation and analysis
-│   ├── evaluator.py         # Evaluation framework
-│   ├── metrics.py           # Evaluation metrics
-│   ├── heldout_objects.py    # Held-out object sets
-│   ├── robustness_tests.py  # Robustness testing
-│   ├── failure_taxonomy.py   # Failure classification
-│   └── seed_variance.py     # Seed variance analysis
+│   ├── evaluator.py        # Evaluation framework
+│   ├── metrics.py          # Evaluation metrics
+│   ├── heldout_objects.py  # Held-out object sets
+│   ├── robustness_tests.py # Robustness testing
+│   ├── failure_taxonomy.py # Failure classification
+│   └── seed_variance.py    # Seed variance analysis
 ├── experiments/             # Experiment configuration
 │   ├── experiment_config.py # Unified configuration system
-│   ├── curriculum_scheduler.py  # Curriculum learning
-│   └── config_*.json        # Configuration files
+│   ├── curriculum_scheduler.py # Curriculum learning
+│   └── config_*.json       # Configuration files
+├── tests/                   # Test suite
+│   ├── test_rollout.py     # Environment and policy tests
+│   ├── test_evaluation_metrics.py # Metrics validation
+│   ├── test_heldout_evaluation.py # Held-out evaluation tests
+│   └── ...                 # Additional test files
 └── logs/                    # Experiment outputs
 ```
 
@@ -398,7 +403,8 @@ dexterous-rl-manipulation/
 - **Reproducible experiments**: Centralized configuration system
 - **Comprehensive evaluation**: Held-out testing, robustness, failure analysis
 - **Systematic analysis**: Ablation studies, seed variance, failure taxonomy
-- **Production-ready code**: No hardcoding, proper error handling, tests
+- **Production-ready code**: No hardcoding, proper error handling, comprehensive test suite
+- **Professional structure**: Organized codebase with dedicated test directory
 
 ## Contributing
 

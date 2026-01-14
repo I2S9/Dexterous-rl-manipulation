@@ -7,9 +7,12 @@ This script validates:
 3. Evaluation works correctly with held-out objects
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import numpy as np
 import json
-from pathlib import Path
 from experiments import CurriculumConfig
 from evaluation import HeldOutObjectSet, generate_training_objects, Evaluator
 from policies import RandomPolicy

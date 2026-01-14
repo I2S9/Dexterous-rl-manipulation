@@ -2,6 +2,10 @@
 Quick test script for reward shaping functionality.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from envs import DexterousManipulationEnv
 from rewards import RewardShaping, SparseReward
 

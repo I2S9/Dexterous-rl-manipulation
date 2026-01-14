@@ -5,6 +5,10 @@ This script verifies that curriculum variables are properly
 exposed and functional in the environment.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from envs import DexterousManipulationEnv
 from experiments import CurriculumConfig
 

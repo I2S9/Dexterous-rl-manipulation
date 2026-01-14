@@ -2,6 +2,10 @@
 Test loading curriculum configurations from JSON files.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from experiments import CurriculumConfig
 from envs import DexterousManipulationEnv
 

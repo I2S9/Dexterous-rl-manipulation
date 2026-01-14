@@ -5,6 +5,10 @@ This script demonstrates curriculum progression based on success rate
 and logs the evolution of difficulty.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import numpy as np
 from envs import DexterousManipulationEnv
 from policies import RandomPolicy
