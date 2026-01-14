@@ -11,31 +11,7 @@ from policies import RandomPolicy
 from experiments import CurriculumConfig, CurriculumScheduler, CurriculumLogger
 
 
-def simulate_episode(env, policy, max_steps=200):
-    """
-    Simulate a single episode.
-    
-    Returns:
-        Tuple of (success, episode_steps, episode_reward)
-    """
-    obs, info = env.reset()
-    policy.reset()
-    
-    episode_reward = 0.0
-    episode_steps = 0
-    
-    for step in range(max_steps):
-        action = policy.select_action(obs)
-        obs, reward, terminated, truncated, info = env.step(action)
-        
-        episode_reward += reward
-        episode_steps += 1
-        
-        if terminated or truncated:
-            break
-    
-    success = info.get("num_contacts", 0) >= 3
-    return success, episode_steps, episode_reward
+from training.episode_utils import run_episode as simulate_episode
 
 
 def run_curriculum_training(

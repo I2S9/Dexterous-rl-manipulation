@@ -21,9 +21,10 @@ import os
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from envs import DexterousManipulationEnv
-from policies import RandomPolicy
+from policies import RandomPolicy, SimpleLearner
 from experiments import CurriculumConfig, CurriculumScheduler
 from rewards import RewardShaping, SparseReward
+from training.episode_utils import run_episode as _run_episode
 
 
 @dataclass
@@ -74,78 +75,6 @@ class TrainingResults:
         }
 
 
-class SimpleLearner:
-    """
-    Simple learning policy that improves over time.
-    
-    This is a simplified learning mechanism to demonstrate
-    component effects without full RL implementation.
-    """
-    
-    def __init__(self, action_space, learning_rate: float = 0.01):
-        """Initialize simple learner."""
-        self.action_space = action_space
-        self.learning_rate = learning_rate
-        self.mean_action = np.zeros(action_space.shape[0], dtype=np.float32)
-        self.best_reward = -np.inf
-    
-    def select_action(self, observation: np.ndarray) -> np.ndarray:
-        """Select action with exploration."""
-        noise = np.random.normal(0, 0.3, size=self.mean_action.shape).astype(np.float32)
-        action = self.mean_action + noise
-        action = np.clip(action, self.action_space.low, self.action_space.high)
-        return action
-    
-    def update(self, reward: float):
-        """Update policy based on reward."""
-        if reward > self.best_reward:
-            adjustment = np.random.normal(0, self.learning_rate, size=self.mean_action.shape)
-            self.mean_action += adjustment
-            self.mean_action = np.clip(self.mean_action, -0.5, 0.5)
-            self.best_reward = reward
-    
-    def reset(self):
-        """Reset policy state."""
-        self.best_reward = -np.inf
-
-
-def run_episode(
-    env: DexterousManipulationEnv,
-    policy,
-    max_steps: Optional[int] = None
-) -> Tuple[bool, int, float]:
-    """
-    Run a single episode.
-    
-    Args:
-        env: Environment to run
-        policy: Policy to use
-        max_steps: Maximum steps per episode
-        
-    Returns:
-        success: Whether the episode was successful
-        steps: Number of steps taken
-        total_reward: Total reward accumulated
-    """
-    obs, info = env.reset()
-    policy.reset()
-    
-    total_reward = 0.0
-    success = False
-    max_steps = max_steps or env.max_episode_steps
-    
-    for step in range(max_steps):
-        action = policy.select_action(obs)
-        obs, reward, terminated, truncated, info = env.step(action)
-        total_reward += reward
-        
-        policy.update(reward)
-        
-        if terminated or truncated:
-            success = info.get("success", False)
-            break
-    
-    return success, step + 1, total_reward
 
 
 def train_with_config(
@@ -228,7 +157,7 @@ def train_with_config(
     success_rates = []
     
     for episode in range(num_episodes):
-        success, steps, reward = run_episode(env, policy)
+        success, steps, reward = _run_episode(env, policy, max_steps=max_episode_steps)
         
         # Update curriculum if enabled
         if scheduler is not None:

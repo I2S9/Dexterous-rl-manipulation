@@ -16,70 +16,10 @@ import os
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from envs import DexterousManipulationEnv
-from policies import RandomPolicy
+from policies import RandomPolicy, SimpleLearner
 from experiments import CurriculumConfig, CurriculumScheduler, CurriculumLogger
 from training.logger import TrainingLogger
-
-
-class SimpleLearner:
-    """
-    Simple learning policy that improves over time.
-    
-    This is a simplified learning mechanism to demonstrate
-    curriculum effects without full RL implementation.
-    """
-    
-    def __init__(self, action_space, learning_rate: float = 0.01):
-        """Initialize simple learner."""
-        self.action_space = action_space
-        self.learning_rate = learning_rate
-        self.mean_action = np.zeros(action_space.shape[0], dtype=np.float32)
-        self.best_reward = -np.inf
-    
-    def select_action(self, observation: np.ndarray) -> np.ndarray:
-        """Select action with exploration."""
-        noise = np.random.normal(0, 0.3, size=self.mean_action.shape).astype(np.float32)
-        action = self.mean_action + noise
-        action = np.clip(action, self.action_space.low, self.action_space.high)
-        return action
-    
-    def update(self, reward: float):
-        """Update policy based on reward."""
-        if reward > self.best_reward:
-            adjustment = np.random.normal(0, self.learning_rate, size=self.mean_action.shape)
-            self.mean_action += adjustment
-            self.mean_action = np.clip(self.mean_action, -0.5, 0.5)
-            self.best_reward = reward
-    
-    def reset(self):
-        """Reset policy state."""
-        self.best_reward = -np.inf
-
-
-def run_episode(env, policy, max_steps=200):
-    """Run a single episode."""
-    obs, info = env.reset()
-    policy.reset()
-    
-    episode_reward = 0.0
-    episode_steps = 0
-    success = False
-    
-    for step in range(max_steps):
-        action = policy.select_action(obs)
-        obs, reward, terminated, truncated, info = env.step(action)
-        
-        episode_reward += reward
-        episode_steps += 1
-        
-        if terminated or truncated:
-            success = terminated
-            break
-    
-    if hasattr(policy, 'update'):
-        policy.update(episode_reward)
-    
-    return success, episode_steps, episode_reward
+from training.episode_utils import run_episode
 
 
 def train_with_curriculum(

@@ -16,70 +16,8 @@ from typing import Dict, List, Tuple
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from envs import DexterousManipulationEnv
-from policies import RandomPolicy
-
-
-class SimpleLearner:
-    """
-    Simple learning policy that improves over time.
-    
-    This is a simplified learning mechanism to demonstrate
-    reward shaping effects without full RL implementation.
-    """
-    
-    def __init__(self, action_space, learning_rate: float = 0.01):
-        """
-        Initialize simple learner.
-        
-        Args:
-            action_space: Gymnasium action space
-            learning_rate: Learning rate for policy updates
-        """
-        self.action_space = action_space
-        self.learning_rate = learning_rate
-        
-        # Simple policy: mean action that gets updated
-        self.mean_action = np.zeros(action_space.shape[0], dtype=np.float32)
-        self.best_reward = -np.inf
-        
-    def select_action(self, observation: np.ndarray) -> np.ndarray:
-        """
-        Select action with exploration.
-        
-        Args:
-            observation: Current observation
-            
-        Returns:
-            action: Action with exploration noise
-        """
-        # Add exploration noise
-        noise = np.random.normal(0, 0.3, size=self.mean_action.shape).astype(np.float32)
-        action = self.mean_action + noise
-        
-        # Clip to action space
-        action = np.clip(action, self.action_space.low, self.action_space.high)
-        
-        return action
-    
-    def update(self, reward: float):
-        """
-        Update policy based on reward.
-        
-        Simple update: if reward improved, slightly adjust mean action.
-        
-        Args:
-            reward: Reward received
-        """
-        if reward > self.best_reward:
-            # Small random adjustment towards better performance
-            adjustment = np.random.normal(0, self.learning_rate, size=self.mean_action.shape)
-            self.mean_action += adjustment
-            self.mean_action = np.clip(self.mean_action, -0.5, 0.5)
-            self.best_reward = reward
-    
-    def reset(self):
-        """Reset policy state."""
-        self.best_reward = -np.inf
+from policies import RandomPolicy, SimpleLearner
+from training.episode_utils import run_training_episode as _run_training_episode
 
 
 def run_training_episode(
@@ -175,9 +113,9 @@ def run_training_comparison(
     for episode in range(num_episodes):
         stats = run_training_episode(env, policy, max_steps)
         
-        episode_rewards.append(stats["episode_reward"])
-        episode_steps.append(stats["episode_steps"])
-        success_rates.append(1.0 if stats["terminated"] else 0.0)
+        episode_rewards.append(stats["total_reward"])
+        episode_steps.append(stats["steps"])
+        success_rates.append(1.0 if stats["success"] else 0.0)
         
         # Check for convergence: average reward over recent window
         if convergence_step is None and len(episode_rewards) >= convergence_window:
