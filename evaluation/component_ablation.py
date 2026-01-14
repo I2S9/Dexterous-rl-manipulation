@@ -112,7 +112,7 @@ class SimpleLearner:
 def run_episode(
     env: DexterousManipulationEnv,
     policy,
-    max_steps: int = 200
+    max_steps: Optional[int] = None
 ) -> Tuple[bool, int, float]:
     """
     Run a single episode.
@@ -132,6 +132,7 @@ def run_episode(
     
     total_reward = 0.0
     success = False
+    max_steps = max_steps or env.max_episode_steps
     
     for step in range(max_steps):
         action = policy.select_action(obs)
@@ -150,7 +151,10 @@ def run_episode(
 def train_with_config(
     config: AblationConfig,
     num_episodes: int = 200,
-    seed: int = 42
+    max_episode_steps: int = 200,
+    seed: int = 42,
+    learning_rate: float = 0.01,
+    curriculum_scheduler_config = None
 ) -> TrainingResults:
     """
     Train with a specific ablation configuration.
@@ -168,17 +172,42 @@ def train_with_config(
     # Setup curriculum if enabled
     scheduler = None
     if config.use_curriculum:
-        initial_config = CurriculumConfig.easy()
-        target_config = CurriculumConfig.hard()
+        # Get difficulty levels from config or use defaults
+        if curriculum_scheduler_config:
+            initial_difficulty = curriculum_scheduler_config.initial_difficulty
+            target_difficulty = curriculum_scheduler_config.target_difficulty
+        else:
+            initial_difficulty = "easy"
+            target_difficulty = "hard"
         
-        scheduler = CurriculumScheduler(
-            initial_config=initial_config,
-            target_config=target_config,
-            success_rate_threshold=0.3,
-            window_size=15,
-            min_episodes_before_progression=20,
-            progression_steps=5,
-        )
+        # Map difficulty strings to configs
+        difficulty_map = {
+            "easy": CurriculumConfig.easy(),
+            "medium": CurriculumConfig.medium(),
+            "hard": CurriculumConfig.hard(),
+        }
+        initial_config = difficulty_map[initial_difficulty]
+        target_config = difficulty_map[target_difficulty]
+        
+        # Use scheduler config if provided, otherwise defaults
+        if curriculum_scheduler_config:
+            scheduler = CurriculumScheduler(
+                initial_config=initial_config,
+                target_config=target_config,
+                success_rate_threshold=curriculum_scheduler_config.success_rate_threshold,
+                window_size=curriculum_scheduler_config.window_size,
+                min_episodes_before_progression=curriculum_scheduler_config.min_episodes_before_progression,
+                progression_steps=curriculum_scheduler_config.progression_steps,
+            )
+        else:
+            scheduler = CurriculumScheduler(
+                initial_config=initial_config,
+                target_config=target_config,
+                success_rate_threshold=0.3,
+                window_size=15,
+                min_episodes_before_progression=20,
+                progression_steps=5,
+            )
         curriculum_config = scheduler.get_current_config()
     else:
         # Use fixed hard configuration for fair comparison
@@ -188,10 +217,11 @@ def train_with_config(
     reward_type = "dense" if config.use_dense_reward else "sparse"
     env = DexterousManipulationEnv(
         curriculum_config=curriculum_config,
-        reward_type=reward_type
+        reward_type=reward_type,
+        max_episode_steps=max_episode_steps
     )
     
-    policy = SimpleLearner(env.action_space, learning_rate=0.01)
+    policy = SimpleLearner(env.action_space, learning_rate=learning_rate)
     
     episode_rewards = []
     episode_steps = []
@@ -238,7 +268,10 @@ def train_with_config(
 
 def run_component_ablation(
     num_episodes: int = 200,
-    seeds: List[int] = [42, 123, 456],
+    max_episode_steps: int = 200,
+    seeds: List[int] = None,
+    learning_rate: float = 0.01,
+    curriculum_scheduler_config = None,
     output_dir: str = "logs"
 ) -> Dict[str, List[TrainingResults]]:
     """
@@ -250,12 +283,18 @@ def run_component_ablation(
     
     Args:
         num_episodes: Number of episodes per configuration
-        seeds: List of random seeds for multiple runs
+        max_episode_steps: Maximum steps per episode
+        seeds: List of random seeds for multiple runs (default: [42, 123, 456])
+        learning_rate: Learning rate for policy
+        curriculum_scheduler_config: Curriculum scheduler configuration
         output_dir: Directory to save results
         
     Returns:
         Dictionary mapping config names to lists of results (one per seed)
     """
+    if seeds is None:
+        seeds = [42, 123, 456]
+    
     # Create all ablation configurations
     configs = [
         AblationConfig(use_curriculum=True, use_dense_reward=True, name="baseline"),
@@ -283,7 +322,14 @@ def run_component_ablation(
         for seed_idx, seed in enumerate(seeds):
             print(f"  Seed {seed_idx + 1}/{len(seeds)} (seed={seed})...", end=" ", flush=True)
             
-            results = train_with_config(config, num_episodes=num_episodes, seed=seed)
+            results = train_with_config(
+                config,
+                num_episodes=num_episodes,
+                max_episode_steps=max_episode_steps,
+                seed=seed,
+                learning_rate=learning_rate,
+                curriculum_scheduler_config=curriculum_scheduler_config
+            )
             config_results.append(results)
             
             print(f"Success rate: {results.final_success_rate:.3f}")
