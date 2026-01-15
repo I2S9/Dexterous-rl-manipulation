@@ -12,8 +12,6 @@
 - [Future Work](#future-work)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
 
 ## Problem
 
@@ -405,25 +403,3 @@ dexterous-rl-manipulation/
 - **Systematic analysis**: Ablation studies, seed variance, failure taxonomy
 - **Production-ready code**: No hardcoding, proper error handling, comprehensive test suite
 - **Professional structure**: Organized codebase with dedicated test directory
-
-## Contributing
-
-This project follows strict engineering standards (see `.cursorrules`):
-
-- Clean, modular, readable code
-- Comprehensive tests
-- Reproducible experiments
-- Well-documented APIs
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@software{dexterous_rl_manipulation,
-  title = {Dexterous Manipulation with Reinforcement Learning},
-  author = {Your Name},
-  year = {2024},
-  url = {https://github.com/yourusername/dexterous-rl-manipulation}
-}
-```
